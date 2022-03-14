@@ -38,6 +38,10 @@ public class CustomAvatarHelper : MonoBehaviour
     [SerializeField]
     private Quaternion _lightDirection = Quaternion.FromToRotation(Vector3.up, new Vector3(-1, -1, 0));
     [SerializeField]
+    private Dictionary<string, Material> _materials = new Dictionary<string, Material>();
+    [SerializeField]
+    private Dictionary<string, bool> _transparencies = new Dictionary<string, bool>();
+
 
 
     public bool getMirrored()
@@ -126,6 +130,11 @@ public class CustomAvatarHelper : MonoBehaviour
 
     private void curlHands(Quaternion thumb, Quaternion grasp, bool left)
     {
+        if (!_graspController.getSavedBoneTransforms())
+        {
+            _graspController.saveBoneTransforms();
+        }
+
         float curlFinger = grasp.eulerAngles.z;
         float curlThumb = thumb.eulerAngles.x;
 
@@ -136,7 +145,7 @@ public class CustomAvatarHelper : MonoBehaviour
             _rightHandThumb = thumb;
             _rightHandGrasp = grasp;
 
-            _graspController.curlHand(curlThumb, left ? curlFinger : curlFinger * -1);
+            _graspController.curlHand(curlThumb, left ? curlFinger : curlFinger * -1, left);
         }
         else if (left)
         {
@@ -276,6 +285,24 @@ public class CustomAvatarHelper : MonoBehaviour
     public void setLightDirection(Quaternion lightDirection)
     {
         _lightDirection = lightDirection;
+    }
+
+    public void addMaterial(Material material, bool transparent)
+    {
+        _materials[material.name] = material;
+        _transparencies[material.name] = transparent;
+    }
+
+    public Dictionary<string, bool> getTransparencies()
+    {
+        return _transparencies;
+    }
+
+    public void setMaterialTransparent(string material, bool transparent)
+    {
+        _materials[material].shader = transparent ? Shader.Find("BeatSaber/Transparent") : Shader.Find("BeatSaber/Lit Glow");
+        _transparencies[material] = transparent;
+        setShaders();
     }
 
     void Start()

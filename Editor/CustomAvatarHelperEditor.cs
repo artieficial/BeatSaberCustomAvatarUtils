@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEditor;
+using System;
+using System.Collections.Generic;
 
 [CustomEditor(typeof(CustomAvatarHelper))]
 [CanEditMultipleObjects]
@@ -109,6 +111,22 @@ public class CustomAvatarHelperEditor : Editor
         customAvatarHelper.setSyncShader(EditorGUILayout.Toggle("Sync Shader", syncShader));
         Texture transparent = (Texture) AssetDatabase.LoadAssetAtPath("Assets/BeatsaberConverter/Textures/Transparent.png", typeof(Texture));
         customAvatarHelper.setTransparent(transparent);
+
+        Dictionary<string, bool> modifiedTransparencies = new Dictionary<string, bool>();
+        foreach (KeyValuePair<string, bool> entry in customAvatarHelper.getTransparencies())
+        {
+            bool transparentMaterial = EditorGUILayout.Toggle(string.Format("Transparent {0}", entry.Key), entry.Value);
+            if (transparentMaterial != entry.Value)
+            {
+                modifiedTransparencies[entry.Key] = transparentMaterial;  
+            }
+        }
+
+        // Don't modify in place
+        foreach(KeyValuePair<string, bool> entry in modifiedTransparencies)
+        {
+            customAvatarHelper.setMaterialTransparent(entry.Key, entry.Value);
+        }
 
         if (customAvatarHelper.getSyncShader())
         {

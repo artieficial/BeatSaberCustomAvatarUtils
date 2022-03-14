@@ -283,18 +283,4 @@ public class DynamicBonesController
         removeDynamicBonePlaneColliderConverters();
         removeDynamicBoneColliderConverters();
     }
-
-    public void removeDynamicBonesLibrary()
-    {
-        string[] guids = AssetDatabase.FindAssets("DynamicBone");
-
-        foreach (string guid in guids)
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (!path.Contains(".dll") && !path.Contains("BeatSaberCustomAvatarUtils"))
-            {
-                AssetDatabase.DeleteAsset(path);
-            }
-        }
-    }
 }

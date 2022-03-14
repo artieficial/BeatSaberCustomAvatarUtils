@@ -7,7 +7,17 @@ using UnityEngine;
 public class GraspController
 {
     private Animator _avatar;
+    private bool _savedBoneTransforms = false;
     private Dictionary<HumanBodyBones, Vector3> _referenceBones = new Dictionary<HumanBodyBones, Vector3>();
+
+    enum rotationAxis {
+        x,
+        y,
+        z,
+        xneg,
+        yneg,
+        zneg,
+    };
 
     private HumanBodyBones[] _leftThumbBones = {
         HumanBodyBones.LeftThumbProximal,
@@ -93,15 +103,96 @@ public class GraspController
                 _referenceBones[bone] = transform.localRotation.eulerAngles;
             }
         }
+
+        _savedBoneTransforms = true;
     }
 
-    public void curlHand(float curlThumb, float curlFinger)
+    public bool getSavedBoneTransforms()
+    {
+        return _savedBoneTransforms;
+    }
+
+    public void curlHand(float curlThumb, float curlFinger, bool left)
     {
         if (_referenceBones.Count == 0)
             return;
 
-        curlHandLeft(curlThumb, curlFinger);
-        curlHandRight(curlThumb, curlFinger);
+        curlHandLeft(curlThumb, left ? curlFinger : curlFinger);
+        curlHandRight(curlThumb, left ? curlFinger : curlFinger);
+    }
+
+    private rotationAxis rotateZWise(Transform transform)
+    {
+        transform.localPosition += new Vector3(1, 0, 0);
+        Vector3 xreferencePosition = transform.position;
+        transform.localPosition += new Vector3(-1, 1, 0);
+        Vector3 yreferencePosition = transform.position;
+        transform.localPosition += new Vector3(0, -1, 1);
+        Vector3 zreferencePosition = transform.position;
+        transform.localPosition += new Vector3(0, 0, -1);
+
+        xreferencePosition -= transform.position;
+        yreferencePosition -= transform.position;
+        zreferencePosition -= transform.position;
+
+        float xzdif = 1 - Math.Abs(xreferencePosition.z);
+        bool xpos = xreferencePosition.z > 0;
+        float yzdif = 1 - Math.Abs(yreferencePosition.z);
+        bool ypos = yreferencePosition.z > 0;
+        float zzdif = 1 - Math.Abs(zreferencePosition.z);
+        bool zpos = zreferencePosition.z > 0;
+
+        Vector3 graspRotation;
+        if (xzdif < yzdif)
+        {
+            if (xzdif < zzdif)
+            {
+                if (xpos)
+                {
+                    return rotationAxis.x;
+                }
+                else
+                {
+                    return rotationAxis.xneg;
+                }
+            }
+            else
+            {
+                if (ypos)
+                {
+                    return rotationAxis.y;
+                }
+                else
+                {
+                    return rotationAxis.yneg;
+                }
+            }
+        }
+        else
+        {
+            if (yzdif < zzdif)
+            {
+                if (ypos)
+                {
+                    return rotationAxis.y;
+                }
+                else
+                {
+                    return rotationAxis.yneg;
+                }
+            }
+            else
+            {
+                if (zpos)
+                {
+                    return rotationAxis.z;
+                }
+                else
+                {
+                    return rotationAxis.zneg;
+                }
+            }
+        }
     }
 
     public void curlHandLeft(float curlThumb, float curlFinger)
@@ -127,7 +218,29 @@ public class GraspController
             if (transform != null)
             {
                 Vector3 localRotation = _referenceBones[bone];
-                Vector3 localRotationModified = new Vector3(localRotation.x, localRotation.y, localRotation.z + curlFinger);
+                rotationAxis rotationAxisResult = rotateZWise(transform);
+                Vector3 localRotationModified = localRotation;
+                switch (rotationAxisResult)
+                {
+                    case rotationAxis.x:
+                        localRotationModified = new Vector3(localRotation.x + curlFinger, localRotation.y, localRotation.z);
+                        break;
+                    case rotationAxis.xneg:
+                        localRotationModified = new Vector3(localRotation.x - curlFinger, localRotation.y, localRotation.z);
+                        break;
+                    case rotationAxis.y:
+                        localRotationModified = new Vector3(localRotation.x, localRotation.y + curlFinger, localRotation.z);
+                        break;
+                    case rotationAxis.yneg:
+                        localRotationModified = new Vector3(localRotation.x, localRotation.y - curlFinger, localRotation.z);
+                        break;
+                    case rotationAxis.z:
+                        localRotationModified = new Vector3(localRotation.x, localRotation.y, localRotation.z + curlFinger);
+                        break;
+                    case rotationAxis.zneg:
+                        localRotationModified = new Vector3(localRotation.x, localRotation.y, localRotation.z - curlFinger);
+                        break;
+                }
                 Quaternion quaternion = new Quaternion();
                 quaternion.eulerAngles = localRotationModified;
                 transform.localRotation = quaternion;
@@ -158,7 +271,31 @@ public class GraspController
             if (transform != null)
             {
                 Vector3 localRotation = _referenceBones[bone];
-                Vector3 localRotationModified = new Vector3(localRotation.x, localRotation.y, localRotation.z - curlFinger);
+                Debug.Log("Right");
+                rotationAxis rotationAxisResult = rotateZWise(transform);
+                Vector3 localRotationModified = localRotation;
+                Debug.Log(rotationAxisResult);
+                switch (rotationAxisResult)
+                {
+                    case rotationAxis.x:
+                        localRotationModified = new Vector3(localRotation.x - curlFinger, localRotation.y, localRotation.z);
+                        break;
+                    case rotationAxis.xneg:
+                        localRotationModified = new Vector3(localRotation.x + curlFinger, localRotation.y, localRotation.z);
+                        break;
+                    case rotationAxis.y:
+                        localRotationModified = new Vector3(localRotation.x, localRotation.y - curlFinger, localRotation.z);
+                        break;
+                    case rotationAxis.yneg:
+                        localRotationModified = new Vector3(localRotation.x, localRotation.y + curlFinger, localRotation.z);
+                        break;
+                    case rotationAxis.z:
+                        localRotationModified = new Vector3(localRotation.x, localRotation.y, localRotation.z - curlFinger);
+                        break;
+                    case rotationAxis.zneg:
+                        localRotationModified = new Vector3(localRotation.x, localRotation.y, localRotation.z + curlFinger);
+                        break;
+                }
                 Quaternion quaternion = new Quaternion();
                 quaternion.eulerAngles = localRotationModified;
                 transform.localRotation = quaternion;
