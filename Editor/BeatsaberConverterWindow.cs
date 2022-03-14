@@ -15,11 +15,13 @@ public class BeatSaberConvertorWindow : EditorWindow
     // UI Settings
     private Vector2 _scroll;
 
+    private DynamicBonesController _dynamicBonesController = new DynamicBonesController();
+
     [MenuItem ("Window/Beat Saber Converter")]
     public static void ShowWindow()
     {
         //Show existing window instance. If one doesn't exist, make one.
-        EditorWindow.GetWindow(typeof(BeatSaberConvertorWindow));
+        EditorWindow.GetWindow(typeof(BeatSaberConvertorWindow), false, "Beat Saber Converter");
     }
 
     private void createStructure()
@@ -107,14 +109,28 @@ public class BeatSaberConvertorWindow : EditorWindow
         }
     }
 
+    private void convertDynamicBones()
+    {
+        _dynamicBonesController.setAvatar(_avatar.gameObject);
+        _dynamicBonesController.toPlaceholder();
+        _dynamicBonesController.removeDynamicBonesLibrary();
+        _dynamicBonesController.toDynamicBones();
+    }
+
     void OnGUI()
     {
         _scroll = EditorGUILayout.BeginScrollView(_scroll);
+
+        if (_avatar == null)
+        {
+            _avatar = (Animator) FindObjectOfType(typeof(Animator));
+        }
         _avatar = (Animator) EditorGUILayout.ObjectField("Avatar", _avatar, typeof(Animator), true);
 
         EditorGUI.BeginDisabledGroup(_avatar == null);
         if (GUILayout.Button("Convert"))
         {
+            convertDynamicBones();
             createStructure();
             setShaders();
         }
